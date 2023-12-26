@@ -68,6 +68,7 @@ int start_listening(int port){
         fprintf(stderr, "listen on port %d failed: %s/n", port, errno);
         abort();
     }
+    printf("server is now listening on port %d", port);
     return lis_so;
 }
 

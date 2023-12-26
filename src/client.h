@@ -16,8 +16,7 @@
 #define FAIL    -1 /*for error output == -1 */
 #define BUFFER  1024  /*buffer for reading messages*/
 
-int client();
+int client(char* hostname, int portnum);
 int open_connection(char* hostname, int port);
-SSL_CTX* init_client_ctx(void);
 
 #endif /* CLIENT_H */
