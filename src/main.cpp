@@ -5,7 +5,10 @@
 #include "client.h"
 
 int main(int argc, char** argv){
-    if (strcmp(argv[1], "--gen-cert") == 0 || strcmp(argv[1], "-g") == 0){
+    if (argc == 1){
+        printf("usage:\n --gen-key/-g\n--server/-s {port(63510)} {cert_path} {key_path}\n--client/-c hostname port");
+    }
+    else if (strcmp(argv[1], "--gen-cert") == 0 || strcmp(argv[1], "-g") == 0){
         RSA* r = gen_key();
         gen_crt(r);
     }
