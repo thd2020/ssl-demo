@@ -5,15 +5,16 @@
 #include "client.h"
 
 int main(int argc, char** argv){
-    if (strcmp(argv[1], "--gen-key") == 0 || strcmp(argv[1], "-g") == 0){
-        gen_key();
+    if (strcmp(argv[1], "--gen-cert") == 0 || strcmp(argv[1], "-g") == 0){
+        RSA* r = gen_key();
+        gen_crt(r);
     }
     else if (strcmp(argv[1], "--server") == 0 || strcmp(argv[1], "-s") == 0){
         if (argc == 3){
-            server(atoi(argv[2]), 10, "public.pem", "private.pem");
+            server(atoi(argv[2]), 10, "cert.pem", "private.pem");
         }
         else if (argc == 2){
-            server(63510, 10, "public.pem", "private.pem");
+            server(3000, 10, "cert.pem", "private.pem");
         }
         else if (argc == 5){
             server(atoi(argv[2]), 10, argv[3], argv[4]);

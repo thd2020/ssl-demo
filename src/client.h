@@ -1,6 +1,7 @@
 #ifndef CLIENT_H
 #define CLIENT_H
 
+#include <stdlib.h>
 #include <errno.h> /*USING THE ERROR LIBRARY FOR FINDING ERRORS*/
 #include <stdio.h> /*standard i/o*/
 #include <unistd.h> /*FOR USING FORK for at a time send and receive messages*/ 

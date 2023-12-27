@@ -12,14 +12,14 @@ int server(int port, int listnum, char* cert_path, char* key_path){
 
     if(!is_root())        /* if root user is not executing server report must be root user */
 	{
-	printf("This program must be run as root/sudo user!!");
+	printf("This program must be run as root/sudo user!!\n");
 	exit(0);
 	}
     SSL_library_init();
     ctx = init_ctx();
     SSL_CTX_set_verify(ctx, SSL_VERIFY_PEER|SSL_VERIFY_FAIL_IF_NO_PEER_CERT, NULL);
     /**设置信任根证书*/
-    if (SSL_CTX_load_verify_locations(ctx, "ca.crt", NULL)<=0){
+    if (SSL_CTX_load_verify_locations(ctx, cert_path, NULL)<=0){
         ERR_print_errors_fp(stdout);
         exit(1);
     }
