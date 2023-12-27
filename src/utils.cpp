@@ -158,7 +158,7 @@ int is_root(){
 
 /**show certs to client*/
 void show_certs(SSL* ssl){
-    X509 *cert;
+    X509* cert;
     char* line;
 
     cert = SSL_get_peer_certificate(ssl);

@@ -55,10 +55,11 @@ int open_connection(char* hostname, int port){
     }
     con_so = socket(PF_INET, SOCK_STREAM, 0);
     bzero(&addr, sizeof(addr));
+    int ret = 1;
     addr.sin_family = AF_INET;
     addr.sin_port = htons(port);
     addr.sin_addr.s_addr = *(long*)(host->h_addr);
-    if (connect(con_so, (struct sockaddr*)&addr, sizeof(addr)) != 0){
+    if (ret = connect(con_so, (struct sockaddr*)&addr, sizeof(addr)) != 0){
         close(con_so);
         fprintf(stderr, "cannot connect to server %s\n", hostname);
         abort();
