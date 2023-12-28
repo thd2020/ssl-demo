@@ -8,7 +8,7 @@ int server(int port, int listnum, char* cert_path, char* key_path){
     unsigned int myport, lisnum;
     char buf[BUFFER + 1];
     SSL_CTX* ctx;
-    SSL* ssl;
+    SSL** ssls = (SSL**)malloc(512);
 
     if(!is_root())        /* if root user is not executing server report must be root user */
 	{
@@ -17,7 +17,7 @@ int server(int port, int listnum, char* cert_path, char* key_path){
 	}
     SSL_library_init();
     ctx = init_server_ctx();
-    SSL_CTX_set_verify(ctx, SSL_VERIFY_PEER|SSL_VERIFY_FAIL_IF_NO_PEER_CERT, NULL);
+    SSL_CTX_set_verify(ctx, SSL_VERIFY_PEER, NULL);
     /**设置信任根证书*/
     if (SSL_CTX_load_verify_locations(ctx, cert_path, NULL)<=0){
         ERR_print_errors_fp(stdout);
@@ -39,13 +39,15 @@ int server(int port, int listnum, char* cert_path, char* key_path){
         exit(1);
     }
     lis_so = start_listening(port);
-    listen(lis_so, 5);
+    while (1){
     con_so = accept(lis_so, (struct sockaddr*)&their_addr, &len);
+    SSL* ssl = *(ssls+1);
     printf("Connection from:%s:%d\n", inet_ntoa(their_addr.sin_addr), ntohs(their_addr.sin_port));
     ssl = SSL_new(ctx);
     SSL_set_fd(ssl, con_so);
-    show_certs(ssl);
-    servlet(ssl);
+    std::thread task(servlet, ssl);
+    task.join();
+    }
     close(con_so);
     SSL_CTX_free(ctx);
 }
@@ -60,15 +62,15 @@ int start_listening(int port){
     addr.sin_addr.s_addr = INADDR_ANY;/*三件套*/
     /**绑定*/
     if (bind(lis_so, (struct sockaddr*)&addr, sizeof(addr)) != 0){
-        fprintf(stderr, "can't bind port %d: %s/n", port, strerror(errno));
+        fprintf(stderr, "can't bind port %d: %s\n", port, strerror(errno));
         abort();
     }
     /**监听*/
     if (listen(lis_so, 10) != 0){
-        fprintf(stderr, "listen on port %d failed: %s/n", port, errno);
+        fprintf(stderr, "listen on port %d failed: %s\n", port, errno);
         abort();
     }
-    printf("server is now listening on port %d", port);
+    printf("server is now listening on port %d\n", port);
     return lis_so;
 }
 
@@ -96,7 +98,7 @@ void servlet(SSL* ssl){
     int con_so, bytes;
     pid_t cpid;
 
-    if (SSL_accept(ssl) == FAIL)
+    if (SSL_accept(ssl) <= 0)
         ERR_print_errors_fp(stderr);
     else{
         show_certs(ssl);
@@ -106,7 +108,7 @@ void servlet(SSL* ssl){
                 bytes = SSL_read(ssl, buf, sizeof(buf));
                 if (bytes > 0){
                     buf[bytes] = 0;
-                    printf("\nMESSAGE FROM SERVER: %s\n", buf);
+                    printf("\nMESSAGE FROM CLIENT: %s\n", buf);
                 }
                 else
                     ERR_print_errors_fp(stderr);
