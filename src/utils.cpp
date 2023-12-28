@@ -178,13 +178,28 @@ void show_certs(SSL* ssl){
 }
 
 
-SSL_CTX* init_ctx(void){
+SSL_CTX* init_server_ctx(void){
     const SSL_METHOD* method;
     SSL_CTX* ctx; /*SSL握手前的环境准备，CA文件和目录，证书文件和私钥，协议版本*/
 
     OpenSSL_add_all_algorithms(); /* load and register all cryptos*/
     SSL_load_error_strings();
     method = TLSv1_2_server_method();
+    ctx = SSL_CTX_new(method);
+    if (ctx == NULL){
+        ERR_print_errors_fp(stderr);
+        abort();
+    }
+    return ctx;
+}
+
+SSL_CTX* init_client_ctx(void){
+    const SSL_METHOD* method;
+    SSL_CTX* ctx; /*SSL握手前的环境准备，CA文件和目录，证书文件和私钥，协议版本*/
+
+    OpenSSL_add_all_algorithms(); /* load and register all cryptos*/
+    SSL_load_error_strings();
+    method = TLSv1_2_client_method();
     ctx = SSL_CTX_new(method);
     if (ctx == NULL){
         ERR_print_errors_fp(stderr);

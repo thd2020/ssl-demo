@@ -16,7 +16,7 @@ int server(int port, int listnum, char* cert_path, char* key_path){
 	exit(0);
 	}
     SSL_library_init();
-    ctx = init_ctx();
+    ctx = init_server_ctx();
     SSL_CTX_set_verify(ctx, SSL_VERIFY_PEER|SSL_VERIFY_FAIL_IF_NO_PEER_CERT, NULL);
     /**设置信任根证书*/
     if (SSL_CTX_load_verify_locations(ctx, cert_path, NULL)<=0){

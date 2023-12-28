@@ -11,13 +11,20 @@ int client(char* hostname, int portnum){
     pid_t cpid;
 
     SSL_library_init();
-    ctx = init_ctx();
+    ctx = init_client_ctx();
     server = open_connection(hostname, portnum);
     ssl = SSL_new(ctx);
     SSL_set_fd(ssl, server);
-    if (SSL_connect(ssl) == FAIL)
+    int status = -1;
+    status = SSL_connect(ssl);
+    if (status <= 0){
+        int ret = 0;
+        SSL_get_error(ssl, ret);
         ERR_print_errors_fp(stderr);
+    }
     else{
+        X509* temp = SSL_get0_peer_certificate(ssl);
+        X509_NAME* name = X509_get_subject_name(temp);
         printf("Connected with %s encryption\n", SSL_get_cipher(ssl));
         show_certs(ssl);
         cpid = fork();
@@ -59,10 +66,16 @@ int open_connection(char* hostname, int port){
     addr.sin_family = AF_INET;
     addr.sin_port = htons(port);
     addr.sin_addr.s_addr = *(long*)(host->h_addr);
+    char* old_ip = inet_ntoa(addr.sin_addr);
     if (ret = connect(con_so, (struct sockaddr*)&addr, sizeof(addr)) != 0){
+        char* er = strerror(errno);
         close(con_so);
         fprintf(stderr, "cannot connect to server %s\n", hostname);
         abort();
     }
+    struct sockaddr_in peeraddr;
+    socklen_t addrlen = sizeof(peeraddr);
+    getpeername(con_so, (struct sockaddr*)&peeraddr, &addrlen);
+    char* ip = inet_ntoa(peeraddr.sin_addr);
     return con_so;
 }
