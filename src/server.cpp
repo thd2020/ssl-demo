@@ -1,5 +1,9 @@
 #include <server.h>
 #include "utils.h"
+#define DEAL_ERR(lab)\
+        fprintf(stderr, "error: %s %d\n", __FILE__, __LINE__);\
+        goto lab;
+#define NUM_PKEYS 1
 
 int server(int port, int listnum, char* cert_path, char* key_path){
     int lis_so, con_so;
@@ -9,6 +13,7 @@ int server(int port, int listnum, char* cert_path, char* key_path){
     char buf[BUFFER + 1];
     SSL_CTX* ctx;
     SSL** ssls = (SSL**)malloc(512);
+    unsigned char* p;
 
     if(!is_root())        /* if root user is not executing server report must be root user */
 	{
@@ -46,9 +51,8 @@ int server(int port, int listnum, char* cert_path, char* key_path){
     ssl = SSL_new(ctx);
     SSL_set_fd(ssl, con_so);
     std::thread task(servlet, ssl);
-    task.join();
+    task.detach();
     }
-    close(con_so);
     SSL_CTX_free(ctx);
 }
 
@@ -94,14 +98,41 @@ void load_certificates(SSL_CTX* ctx, char* CertFile, char* KeyFile){
 /**threadable serve the connection*/
 void servlet(SSL* ssl){
     char buf[BUFFER];
-    char input[BUFFER];
+    char* input = (char*)malloc(BUFFER);
     int con_so, bytes;
     pid_t cpid;
+    int ret = 0;
+    EVP_CIPHER_CTX *cctx = NULL;
+    unsigned char* iv = (unsigned char*)malloc(EVP_CIPHER_get_iv_length(EVP_sm4_cbc()));
+    unsigned char *ek[NUM_PKEYS] = {0};
+    int ekl[NUM_PKEYS];
+    unsigned char* cbuf = (unsigned char*)malloc(BUFFER);
+    unsigned char* mbuf = (unsigned char*)malloc(BUFFER);
+    unsigned char* p = (unsigned char*)malloc(BUFFER);
+    int len, clen, mlen, i;
+    BIO *out = NULL;
+    EVP_PKEY* mpkey = NULL;
+    EVP_PKEY* pkey[NUM_PKEYS];
+    X509* server_cert;
+    FILE* cert_file,* pkey_file;
 
     if (SSL_accept(ssl) <= 0)
         ERR_print_errors_fp(stderr);
     else{
         show_certs(ssl);
+        /**数字信封*/
+        pkey_file = fopen("public.pem", "rb");
+        mpkey = PEM_read_PUBKEY(pkey_file, NULL, NULL, NULL);
+        pkey[0] = mpkey;
+        if (!(cctx = EVP_CIPHER_CTX_new())) {DEAL_ERR(end);}
+        for (i = 0; i < NUM_PKEYS; i++) {
+            ekl[i] = EVP_PKEY_get_size(pkey[i]);
+            ek[i] = (unsigned char*)OPENSSL_malloc(ekl[i]);
+        }
+        if (i = EVP_SealInit(cctx, EVP_sm4_cbc(), ek, ekl, iv, pkey, NUM_PKEYS) != NUM_PKEYS) {DEAL_ERR(end);}
+        SSL_write(ssl, ek[0], 256);
+        sleep(1);
+        SSL_write(ssl, iv, EVP_CIPHER_get_iv_length(EVP_sm4_cbc()));
         cpid = fork();
         if (cpid == 0){ /*子进程*/
             while(1){
@@ -118,11 +149,20 @@ void servlet(SSL* ssl){
             while(1){
                 printf("\nMESSAGE TO CLIENT:");
                 fgets(input, BUFFER, stdin);
-                SSL_write(ssl, input, strlen(input));
+                if (!EVP_SealUpdate(cctx, p, &len, (unsigned char*)input, strlen(input))) {DEAL_ERR(end);}
+                if (!EVP_SealFinal(cctx, p, &len)) {DEAL_ERR(end);}
+                SSL_write(ssl, p, len);
             }
         }
     }
+    end:
+        EVP_CIPHER_CTX_free(cctx);
+        for (i = 0; i < NUM_PKEYS; i++) {
+            EVP_PKEY_free(pkey[i]);
+            OPENSSL_free(ek[i]);
+        }
     con_so = SSL_get_fd(ssl);
     SSL_free(ssl);
     close(con_so);
+    return;
 }

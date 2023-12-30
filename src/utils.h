@@ -14,7 +14,9 @@
 #include <openssl/bio.h>
 #include <openssl/x509.h>
 #include <openssl/err.h>
+#include <openssl/rand.h>
 
+int lengthOfU(unsigned char * str);
 RSA* gen_key();
 char* gen_csr(RSA* r);
 char* gen_crt(RSA* r);

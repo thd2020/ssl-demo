@@ -1,5 +1,16 @@
 #include "utils.h"
 
+int lengthOfU(unsigned char * str)
+{
+    int i = 0;
+    while(*(str++)){
+        i++;
+        if(i == INT_MAX)
+            return -1;
+    }
+    return i;
+}
+
 /** 生成公钥私钥 */
 RSA* gen_key(){
     int ret = 0;
@@ -163,6 +174,9 @@ void show_certs(SSL* ssl){
 
     cert = SSL_get_peer_certificate(ssl);
     if (cert != NULL){
+        if(SSL_get_verify_result(ssl) == X509_V_OK){
+        printf("证书验证通过\n");
+        }
         printf("certificates:\n");
         line = X509_NAME_oneline(X509_get_subject_name(cert), 0, 0);
         printf("Server: %s\n", line);

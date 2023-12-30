@@ -14,6 +14,7 @@
 #include <netinet/in.h>
 #include <openssl/ssl.h>
 #include <openssl/err.h>
+#include <openssl/evp.h>
 
 #define FAIL    -1
 #define BUFFER  1024
