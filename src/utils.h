@@ -6,6 +6,7 @@
 #include <stdlib.h>
 #include <errno.h>
 #include <string>
+#include <thread>
 #include <arpa/inet.h>
 #include <openssl/ssl.h>
 #include <openssl/rsa.h>
